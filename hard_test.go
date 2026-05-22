@@ -1,10 +1,11 @@
 package dat_test
 
 import (
-	"dat"
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/saro-lab/dat-go"
 )
 
 func TestHard(t *testing.T) {

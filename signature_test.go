@@ -1,10 +1,11 @@
 package dat_test
 
 import (
-	"dat"
 	"fmt"
 	"math/rand/v2"
 	"testing"
+
+	"github.com/saro-lab/dat-go"
 )
 
 func randStringSig() string {

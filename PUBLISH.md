@@ -3,10 +3,8 @@
 go clean
 go clean -cache
 go clean -testcache
-```
-- clean full
-```shell
 go clean -modcache
+go mod tidy
 ```
 - build
 ```shell

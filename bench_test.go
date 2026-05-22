@@ -1,12 +1,13 @@
 package dat_test
 
 import (
-	"dat"
 	"fmt"
 	"math/rand/v2"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/saro-lab/dat-go"
 )
 
 func randStringBench() string {

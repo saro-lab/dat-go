@@ -1,13 +1,12 @@
-//go:build ignore_bench
-
 package dat_test
 
 import (
-	"dat"
 	"fmt"
 	"math/rand/v2"
 	"testing"
 	"time"
+
+	"github.com/saro-lab/dat-go"
 )
 
 func randStringEcdsaBench() string {
