@@ -24,7 +24,7 @@ func TestBenchEcdsa(t *testing.T) {
 	}
 
 	loopSize := 10000
-	algs := []dat.SignatureAlgorithm{dat.P256, dat.P384, dat.P521}
+	algs := []dat.DatSignatureAlgorithm{dat.EcdsaP256, dat.EcdsaP384, dat.EcdsaP521}
 
 	for _, algorithm := range algs {
 		key, _ := dat.GenerateSignatureKey(algorithm)

@@ -8,14 +8,21 @@ import (
 type Certificate struct {
 	Cid           uint64
 	cidPreCopy    string
-	SignatureKey  *SignatureKey
-	CryptoKey     *CryptoKey
+	SignatureKey  *DatSignature
+	CryptoKey     *DatCrypto
 	DatIssueBegin uint64
 	DatIssueEnd   uint64
 	DatTTL        uint64
 }
 
-func NewCertificate(cid uint64, signatureKey *SignatureKey, cryptoKey *CryptoKey, issueBegin, issueEnd, ttl uint64) (*Certificate, error) {
+func NewCertificate(cid uint64, issuedAt, issuanceDuration, ttl uint64, signatureKey *DatSignature, cryptoKey *DatCrypto) (*Certificate, error) {
+	if ttl == 0 {
+		return nil, ErrInvalidDatTtl
+	}
+	if issuanceDuration < ttl*2 && issuanceDuration < (ttl+3600) {
+		return nil, ErrInvalidIssuanceDuration
+	}
+
 	cidPreCopy := "." + ToHexFromU64(cid) + "."
 
 	return &Certificate{
@@ -23,19 +30,19 @@ func NewCertificate(cid uint64, signatureKey *SignatureKey, cryptoKey *CryptoKey
 		cidPreCopy:    cidPreCopy,
 		SignatureKey:  signatureKey,
 		CryptoKey:     cryptoKey,
-		DatIssueBegin: issueBegin,
-		DatIssueEnd:   issueEnd,
+		DatIssueBegin: issuedAt,
+		DatIssueEnd:   issuedAt + issuanceDuration,
 		DatTTL:        ttl,
 	}, nil
 }
 
-func GenerateCertificate(cid uint64, signatureAlgorithm SignatureAlgorithm, cryptoAlgorithm CryptoAlgorithm, issueBegin, issueEnd, ttl uint64) (*Certificate, error) {
+func GenerateCertificate(cid uint64, issuedAt, issuanceDuration, ttl uint64, signatureAlgorithm DatSignatureAlgorithm, cryptoAlgorithm DatCryptoAlgorithm) (*Certificate, error) {
 	sk, err := GenerateSignatureKey(signatureAlgorithm)
 	if err != nil {
 		return nil, err
 	}
 	ck := GenerateCryptoKey(cryptoAlgorithm)
-	return NewCertificate(cid, sk, ck, issueBegin, issueEnd, ttl)
+	return NewCertificate(cid, issuedAt, issuanceDuration, ttl, sk, ck)
 }
 
 func (c *Certificate) Expired() bool {
@@ -48,14 +55,14 @@ func (c *Certificate) Issuable() bool {
 }
 
 func (c *Certificate) HasSigningKey() bool {
-	return c.SignatureKey.HasSigningKey()
+	return c.SignatureKey.Signable()
 }
 
-func (c *Certificate) SignatureAlgorithm() SignatureAlgorithm {
+func (c *Certificate) SignatureAlgorithm() DatSignatureAlgorithm {
 	return c.SignatureKey.Algorithm()
 }
 
-func (c *Certificate) CryptoAlgorithm() CryptoAlgorithm {
+func (c *Certificate) CryptoAlgorithm() DatCryptoAlgorithm {
 	return c.CryptoKey.Algorithm()
 }
 
@@ -63,36 +70,29 @@ func (c *Certificate) Export(option SignatureKeyExportOption) (string, error) {
 	var sb strings.Builder
 	sb.WriteString(ToHexFromU64(c.Cid))
 	sb.WriteString(".")
-	sb.WriteString(string(c.SignatureKey.Algorithm()))
+	sb.WriteString(strconv.FormatUint(c.DatIssueBegin, 10))
 	sb.WriteString(".")
-
-	sk, vk := c.SignatureKey.ToBytes()
-	if len(sk) == 0 && option != Verifying {
-		return "", ErrVerifyOnlyCertificate
-	}
-
-	switch option {
-	case Pair:
-		sb.WriteString(EncodeBase64URL(sk))
-		sb.WriteString("~")
-		sb.WriteString(EncodeBase64URL(vk))
-	case Signing:
-		sb.WriteString(EncodeBase64URL(sk))
-	case Verifying:
-		sb.WriteString("~")
-		sb.WriteString(EncodeBase64URL(vk))
-	}
-
+	sb.WriteString(strconv.FormatUint(c.DatIssueEnd-c.DatIssueBegin, 10))
+	sb.WriteString(".")
+	sb.WriteString(strconv.FormatUint(c.DatTTL, 10))
+	sb.WriteString(".")
+	sb.WriteString(string(c.SignatureKey.Algorithm()))
 	sb.WriteString(".")
 	sb.WriteString(string(c.CryptoKey.Algorithm()))
 	sb.WriteString(".")
+
+	verifyOnly := option == Verifying
+	key, err := c.SignatureKey.ExportKeyOption(verifyOnly)
+	if err != nil {
+		return "", err
+	}
+	if !verifyOnly && !c.SignatureKey.Signable() {
+		return "", ErrNotExistsSigningKey
+	}
+
+	sb.WriteString(EncodeBase64URL(key))
+	sb.WriteString(".")
 	sb.WriteString(EncodeBase64URL(c.CryptoKey.ToBytes()))
-	sb.WriteString(".")
-	sb.WriteString(strconv.FormatUint(c.DatIssueBegin, 10))
-	sb.WriteString(".")
-	sb.WriteString(strconv.FormatUint(c.DatIssueEnd, 10))
-	sb.WriteString(".")
-	sb.WriteString(strconv.FormatUint(c.DatTTL, 10))
 
 	return sb.String(), nil
 }
@@ -108,33 +108,38 @@ func ParseCertificate(format string) (*Certificate, error) {
 		return nil, ErrInvalidDat
 	}
 
-	sigAlgo := SignatureAlgorithm(parts[1])
-	sigKeyStr := parts[2]
-	var skBytes, vkBytes []byte
-	if strings.Contains(sigKeyStr, "~") {
-		subParts := strings.Split(sigKeyStr, "~")
-		if subParts[0] == "" {
-			vkBytes, err = DecodeBase64URL(subParts[1])
-		} else {
-			skBytes, err = DecodeBase64URL(subParts[0])
-			if err == nil {
-				vkBytes, err = DecodeBase64URL(subParts[1])
-			}
+	issuedAt, err := strconv.ParseUint(parts[1], 10, 64)
+	if err != nil {
+		return nil, ErrInvalidCertificateFormat
+	}
+
+	issuanceDuration, err := strconv.ParseUint(parts[2], 10, 64)
+	if err != nil {
+		return nil, ErrInvalidCertificateFormat
+	}
+
+	ttl, err := strconv.ParseUint(parts[3], 10, 64)
+	if err != nil {
+		return nil, ErrInvalidCertificateFormat
+	}
+
+	sigAlgo := DatSignatureAlgorithm(parts[4])
+	sigKeyBytes, err := DecodeBase64URL(parts[6])
+	if err != nil {
+		return nil, err
+	}
+
+	signatureKey, err := NewSignatureKey(sigAlgo, sigKeyBytes, nil)
+	if err != nil {
+		// Try treating as public key if it failed?
+		signatureKey, err = NewSignatureKey(sigAlgo, nil, sigKeyBytes)
+		if err != nil {
+			return nil, err
 		}
-	} else {
-		skBytes, err = DecodeBase64URL(sigKeyStr)
-	}
-	if err != nil {
-		return nil, err
 	}
 
-	signatureKey, err := NewSignatureKey(sigAlgo, skBytes, vkBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	cryptoAlgo := CryptoAlgorithm(parts[3])
-	cryptoKeyBytes, err := DecodeBase64URL(parts[4])
+	cryptoAlgo := DatCryptoAlgorithm(parts[5])
+	cryptoKeyBytes, err := DecodeBase64URL(parts[7])
 	if err != nil {
 		return nil, err
 	}
@@ -143,18 +148,5 @@ func ParseCertificate(format string) (*Certificate, error) {
 		return nil, err
 	}
 
-	issueBegin, err := strconv.ParseUint(parts[5], 10, 64)
-	if err != nil {
-		return nil, ErrInvalidCertificateFormat
-	}
-	issueEnd, err := strconv.ParseUint(parts[6], 10, 64)
-	if err != nil {
-		return nil, ErrInvalidCertificateFormat
-	}
-	ttl, err := strconv.ParseUint(parts[7], 10, 64)
-	if err != nil {
-		return nil, ErrInvalidCertificateFormat
-	}
-
-	return NewCertificate(cid, signatureKey, cryptoKey, issueBegin, issueEnd, ttl)
+	return NewCertificate(cid, issuedAt, issuanceDuration, ttl, signatureKey, cryptoKey)
 }

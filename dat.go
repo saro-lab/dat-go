@@ -1,7 +1,6 @@
 package dat
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -28,7 +27,7 @@ func (d *Dat) BodyBytes() []byte {
 }
 
 func (d *Dat) String() string {
-	return fmt.Sprintf("%d.%x", d.Expire, d.Cid)
+	return strconv.FormatUint(d.Expire, 10) + "." + ToHexFromU64(d.Cid)
 }
 
 func ParseDat(s string) (*Dat, error) {
@@ -48,8 +47,15 @@ func ParseDat(s string) (*Dat, error) {
 	}
 
 	lastDotIdx := strings.LastIndex(s, ".")
+	if lastDotIdx == -1 {
+		return nil, ErrInvalidDat
+	}
 	body := s[:lastDotIdx]
 	signatureB64 := s[lastDotIdx+1:]
+
+	if signatureB64 == "" {
+		return nil, ErrInvalidDat
+	}
 
 	signature, err := DecodeBase64URL(signatureB64)
 	if err != nil {
@@ -61,9 +67,10 @@ func ParseDat(s string) (*Dat, error) {
 	plainPos := p1
 	p2 := p1 + len(parts[2]) + 1 // after expire.cid.plain
 	securePos := p2
+	secureEnd := p2 + len(parts[3])
 
 	return &Dat{
-		data:      []byte(body),
+		data:      []byte(body[:secureEnd]),
 		Expire:    expire,
 		Cid:       cid,
 		plainPos:  plainPos,

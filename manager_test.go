@@ -18,8 +18,11 @@ func randString() string {
 }
 
 func genCertificate(manager *dat.Manager) error {
-	signAlgs := []dat.SignatureAlgorithm{dat.P256, dat.P384, dat.P521}
-	cryptoAlgs := []dat.CryptoAlgorithm{dat.AES128GCMN, dat.AES256GCMN}
+	signAlgs := []dat.DatSignatureAlgorithm{
+		dat.HmacSha256Mfs, dat.HmacSha384Mfs, dat.HmacSha512Mfs,
+		dat.EcdsaP256, dat.EcdsaP384, dat.EcdsaP521,
+	}
+	cryptoAlgs := []dat.DatCryptoAlgorithm{dat.IvAes128Gcm, dat.IvAes256Gcm}
 	var certificates []*dat.Certificate
 	now := dat.NowUnixTimestamp()
 	var i uint64 = 0
@@ -28,7 +31,7 @@ func genCertificate(manager *dat.Manager) error {
 			for j := 0; j < 4; j++ {
 				cid := i
 				i++
-				cert, err := dat.GenerateCertificate(cid, signAlg, cryptoAlg, now-10, now+600, 60)
+				cert, err := dat.GenerateCertificate(cid, now-10, 610, 60, signAlg, cryptoAlg)
 				if err != nil {
 					return err
 				}
@@ -36,7 +39,6 @@ func genCertificate(manager *dat.Manager) error {
 			}
 		}
 	}
-	fmt.Printf("Generated \n%s\n", manager.Export(dat.Pair))
 	return manager.ImportCertificates(certificates, false)
 }
 
@@ -65,19 +67,18 @@ func TestManager(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tag := "dat.manager"
+	tag := "Manager"
 	for _, token := range dats {
 		d, err := dat.ParseDat(token)
 		if err != nil {
 			t.Fatal(err)
 		}
-		fmt.Printf("%s.%s\n", tag, d.String())
 		payload, err := manager2.Parse(d)
 		if err != nil {
 			t.Fatal(err)
 		}
 		sp, _ := payload.ToStringPayload()
-		fmt.Printf("%s.%s\n", tag, sp.String())
+		fmt.Printf("%s %s\n", tag, sp.String())
 
 		if sp.Plain != plain {
 			t.Errorf("expected plain %s, got %s", plain, sp.Plain)

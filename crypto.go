@@ -7,21 +7,27 @@ import (
 	"io"
 )
 
-type CryptoAlgorithm string
+type DatCryptoAlgorithm string
 
 const (
-	AES128GCMN CryptoAlgorithm = "AES128GCMN"
-	AES256GCMN CryptoAlgorithm = "AES256GCMN"
+	IvAes128Gcm DatCryptoAlgorithm = "IV-AES128-GCM"
+	IvAes256Gcm DatCryptoAlgorithm = "IV-AES256-GCM"
 )
 
-type CryptoKey struct {
-	algorithm CryptoAlgorithm
+// Deprecated: Use IvAes128Gcm, IvAes256Gcm instead
+const (
+	AES128GCMN = IvAes128Gcm
+	AES256GCMN = IvAes256Gcm
+)
+
+type DatCrypto struct {
+	algorithm DatCryptoAlgorithm
 	key       []byte
 	block     cipher.Block
 	gcm       cipher.AEAD
 }
 
-func NewCryptoKey(algorithm CryptoAlgorithm, data []byte) (*CryptoKey, error) {
+func NewCryptoKey(algorithm DatCryptoAlgorithm, data []byte) (*DatCrypto, error) {
 	block, err := aes.NewCipher(data)
 	if err != nil {
 		return nil, ErrInvalidCryptoKey
@@ -30,7 +36,7 @@ func NewCryptoKey(algorithm CryptoAlgorithm, data []byte) (*CryptoKey, error) {
 	if err != nil {
 		return nil, ErrInvalidCryptoKey
 	}
-	return &CryptoKey{
+	return &DatCrypto{
 		algorithm: algorithm,
 		key:       data,
 		block:     block,
@@ -38,11 +44,14 @@ func NewCryptoKey(algorithm CryptoAlgorithm, data []byte) (*CryptoKey, error) {
 	}, nil
 }
 
-func GenerateCryptoKey(algorithm CryptoAlgorithm) *CryptoKey {
+func GenerateCryptoKey(algorithm DatCryptoAlgorithm) *DatCrypto {
 	var size int
-	if algorithm == AES128GCMN {
+	switch algorithm {
+	case IvAes128Gcm:
 		size = 16
-	} else {
+	case IvAes256Gcm:
+		size = 32
+	default:
 		size = 32
 	}
 	key := make([]byte, size)
@@ -51,15 +60,26 @@ func GenerateCryptoKey(algorithm CryptoAlgorithm) *CryptoKey {
 	return ck
 }
 
-func (ck *CryptoKey) Algorithm() CryptoAlgorithm {
+func (ck *DatCrypto) Algorithm() DatCryptoAlgorithm {
 	return ck.algorithm
 }
 
-func (ck *CryptoKey) ToBytes() []byte {
+func (ck *DatCrypto) ToBytes() []byte {
 	return ck.key
 }
 
-func (ck *CryptoKey) Encrypt(body []byte) ([]byte, error) {
+func (ck *DatCrypto) KeyBase64Len() int {
+	switch ck.algorithm {
+	case IvAes128Gcm:
+		return 22
+	case IvAes256Gcm:
+		return 43
+	default:
+		return 0
+	}
+}
+
+func (ck *DatCrypto) Encrypt(body []byte) ([]byte, error) {
 	if len(body) == 0 {
 		return []byte{}, nil
 	}
@@ -73,7 +93,7 @@ func (ck *CryptoKey) Encrypt(body []byte) ([]byte, error) {
 	return encData, nil
 }
 
-func (ck *CryptoKey) Decrypt(data []byte) ([]byte, error) {
+func (ck *DatCrypto) Decrypt(data []byte) ([]byte, error) {
 	if len(data) == 0 {
 		return []byte{}, nil
 	}

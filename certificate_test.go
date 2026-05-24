@@ -17,11 +17,11 @@ func randStringCert() string {
 	return string(b)
 }
 
-func unitCert(t *testing.T, failCertificate *dat.Certificate, cid uint64, signatureAlgorithm dat.SignatureAlgorithm, cryptoAlgorithm dat.CryptoAlgorithm, plain string, secure string) error {
+func unitCert(t *testing.T, failCertificate *dat.Certificate, cid uint64, signatureAlgorithm dat.DatSignatureAlgorithm, cryptoAlgorithm dat.DatCryptoAlgorithm, plain string, secure string) error {
 	tag := fmt.Sprintf("dat.%s.%s.%x", signatureAlgorithm, cryptoAlgorithm, cid)
 
 	now := dat.NowUnixTimestamp()
-	newCertificate, err := dat.GenerateCertificate(cid, signatureAlgorithm, cryptoAlgorithm, now-10, now+600, 60)
+	newCertificate, err := dat.GenerateCertificate(cid, now-10, 610, 60, signatureAlgorithm, cryptoAlgorithm)
 	if err != nil {
 		return err
 	}
@@ -69,11 +69,14 @@ func unitCert(t *testing.T, failCertificate *dat.Certificate, cid uint64, signat
 }
 
 func TestCertificate(t *testing.T) {
-	signAlgs := []dat.SignatureAlgorithm{dat.P256, dat.P384, dat.P521}
-	cryptoAlgs := []dat.CryptoAlgorithm{dat.AES128GCMN, dat.AES256GCMN}
+	signAlgs := []dat.DatSignatureAlgorithm{
+		dat.HmacSha256Mfs, dat.HmacSha384Mfs, dat.HmacSha512Mfs,
+		dat.EcdsaP256, dat.EcdsaP384, dat.EcdsaP521,
+	}
+	cryptoAlgs := []dat.DatCryptoAlgorithm{dat.IvAes128Gcm, dat.IvAes256Gcm}
 
 	now := dat.NowUnixTimestamp()
-	failCertificate, _ := dat.GenerateCertificate(192874, dat.P256, dat.AES256GCMN, now-10, now+600, 60)
+	failCertificate, _ := dat.GenerateCertificate(192874, now-10, 610, 60, dat.EcdsaP256, dat.IvAes256Gcm)
 
 	for _, signAlg := range signAlgs {
 		for _, cryptoAlg := range cryptoAlgs {

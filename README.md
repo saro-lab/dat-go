@@ -8,18 +8,23 @@
 
 ### [Go Example](https://dat.saro.me/--/libs/go-saro-dat)
 
-## support signature algorithm
-| name   | algorithm  |
-|--------|------------|
-| P256   | secp256r1  |
-| P384   | secp384r1  |
-| P521   | secp521r1  |
+## Support algorithm
+### Signature
+| name            | note                  |
+|-----------------|-----------------------|
+| ECDSA-P256      | = secp256r1           |
+| ECDSA-P384      | = secp384r1           |
+| ECDSA-P521      | = secp521r1           |
+| HMAC-SHA256-MFS | = 256Bit Fixed Secret |
+| HMAC-SHA384-MFS | = 384Bit Fixed Secret |
+| HMAC-SHA512-MFS | = 512Bit Fixed Secret |
+- MFS : Maximum(Same Bit) Fixed Secret
 
-## support crypto algorithm
-| name       | algorithm                   |
-|------------|-----------------------------|
-| AES128GCMN | aes-128-gcm n(nonce + body) |
-| AES256GCMN | aes-256-cbc n(nonce + body) |
+### Crypto
+| name       | note                          |
+|------------|-------------------------------|
+| IV-AES128-GCM | (IV=NONCE:96BIT) + AES128 GCM |
+| IV-AES256-GCM | (IV=NONCE:96BIT) + AES256 GCM |
 
 
 # Performance
@@ -29,34 +34,58 @@
 ```
 === RUN   TestBenchmark
 performance test (plain, secure)
-plain: BH62OXbOHIgMIRKvDyftUesEordnx4OcPQ20lGGRAbhWNgHYTgH8d9qA0Tdn7guU1JlzoGDNysQYoc8OQWXsyYLJJmeUXnHGocCg
-secure: U8u73r1Cf7UBTOLVAVeDjVbRLj5ZV5zwepw8D0O04lh9Meg2vtKiauxYD2euVOwta2WaPzPbMKyteYzqx8cRDBolysRjCK5YE4zU
+plain: f8ihvaSeSqtgjg2b44ZfLC5u9V0OjupYaXoHWWuU3zUA0uqdbF6TSL7j0YZzQ6o1HdSfpG7eohw6crfR3R3JRDlPKa6XA17Aa8z8
+secure: DDaZ5HUybJwGtTdKkeRAjIBcsxLZ2VUt5P4seQDrTLLdaP3HbgqHNfVG0Gj2fULozB35ejk5I1WYavj4cMSIcsYKyTASpXIMNHQj
 
 Multi-Thread
-P256 AES128GCMN Issue * 10000 : 69ms
-P256 AES128GCMN Parse * 10000 : 69ms
-P256 AES256GCMN Issue * 10000 : 54ms
-P256 AES256GCMN Parse * 10000 : 92ms
-P384 AES128GCMN Issue * 10000 : 214ms
-P384 AES128GCMN Parse * 10000 : 572ms
-P384 AES256GCMN Issue * 10000 : 202ms
-P384 AES256GCMN Parse * 10000 : 566ms
-P521 AES128GCMN Issue * 10000 : 463ms
-P521 AES128GCMN Parse * 10000 : 1494ms
-P521 AES256GCMN Issue * 10000 : 496ms
-P521 AES256GCMN Parse * 10000 : 1553ms
+HMAC-SHA256-MFS IV-AES128-GCM Issue * 10000 : 19ms
+HMAC-SHA256-MFS IV-AES128-GCM Parse * 10000 : 7ms
+HMAC-SHA256-MFS IV-AES256-GCM Issue * 10000 : 13ms
+HMAC-SHA256-MFS IV-AES256-GCM Parse * 10000 : 7ms
+HMAC-SHA384-MFS IV-AES128-GCM Issue * 10000 : 13ms
+HMAC-SHA384-MFS IV-AES128-GCM Parse * 10000 : 7ms
+HMAC-SHA384-MFS IV-AES256-GCM Issue * 10000 : 13ms
+HMAC-SHA384-MFS IV-AES256-GCM Parse * 10000 : 7ms
+HMAC-SHA512-MFS IV-AES128-GCM Issue * 10000 : 14ms
+HMAC-SHA512-MFS IV-AES128-GCM Parse * 10000 : 8ms
+HMAC-SHA512-MFS IV-AES256-GCM Issue * 10000 : 16ms
+HMAC-SHA512-MFS IV-AES256-GCM Parse * 10000 : 8ms
+ECDSA-P256 IV-AES128-GCM Issue * 10000 : 61ms
+ECDSA-P256 IV-AES128-GCM Parse * 10000 : 73ms
+ECDSA-P256 IV-AES256-GCM Issue * 10000 : 55ms
+ECDSA-P256 IV-AES256-GCM Parse * 10000 : 70ms
+ECDSA-P384 IV-AES128-GCM Issue * 10000 : 214ms
+ECDSA-P384 IV-AES128-GCM Parse * 10000 : 575ms
+ECDSA-P384 IV-AES256-GCM Issue * 10000 : 219ms
+ECDSA-P384 IV-AES256-GCM Parse * 10000 : 574ms
+ECDSA-P521 IV-AES128-GCM Issue * 10000 : 476ms
+ECDSA-P521 IV-AES128-GCM Parse * 10000 : 1573ms
+ECDSA-P521 IV-AES256-GCM Issue * 10000 : 503ms
+ECDSA-P521 IV-AES256-GCM Parse * 10000 : 1485ms
 
 Single-Thread
-P256 AES128GCMN Issue * 10000 : 179ms
-P256 AES128GCMN Parse * 10000 : 381ms
-P256 AES256GCMN Issue * 10000 : 178ms
-P256 AES256GCMN Parse * 10000 : 366ms
-P384 AES128GCMN Issue * 10000 : 1116ms
-P384 AES128GCMN Parse * 10000 : 3261ms
-P384 AES256GCMN Issue * 10000 : 1107ms
-P384 AES256GCMN Parse * 10000 : 3252ms
-P521 AES128GCMN Issue * 10000 : 2712ms
-P521 AES128GCMN Parse * 10000 : 8918ms
-P521 AES256GCMN Issue * 10000 : 2757ms
-P521 AES256GCMN Parse * 10000 : 8721ms
+HMAC-SHA256-MFS IV-AES128-GCM Issue * 10000 : 12ms
+HMAC-SHA256-MFS IV-AES128-GCM Parse * 10000 : 6ms
+HMAC-SHA256-MFS IV-AES256-GCM Issue * 10000 : 11ms
+HMAC-SHA256-MFS IV-AES256-GCM Parse * 10000 : 6ms
+HMAC-SHA384-MFS IV-AES128-GCM Issue * 10000 : 15ms
+HMAC-SHA384-MFS IV-AES128-GCM Parse * 10000 : 10ms
+HMAC-SHA384-MFS IV-AES256-GCM Issue * 10000 : 15ms
+HMAC-SHA384-MFS IV-AES256-GCM Parse * 10000 : 10ms
+HMAC-SHA512-MFS IV-AES128-GCM Issue * 10000 : 15ms
+HMAC-SHA512-MFS IV-AES128-GCM Parse * 10000 : 9ms
+HMAC-SHA512-MFS IV-AES256-GCM Issue * 10000 : 15ms
+HMAC-SHA512-MFS IV-AES256-GCM Parse * 10000 : 10ms
+ECDSA-P256 IV-AES128-GCM Issue * 10000 : 175ms
+ECDSA-P256 IV-AES128-GCM Parse * 10000 : 363ms
+ECDSA-P256 IV-AES256-GCM Issue * 10000 : 170ms
+ECDSA-P256 IV-AES256-GCM Parse * 10000 : 364ms
+ECDSA-P384 IV-AES128-GCM Issue * 10000 : 1105ms
+ECDSA-P384 IV-AES128-GCM Parse * 10000 : 3254ms
+ECDSA-P384 IV-AES256-GCM Issue * 10000 : 1105ms
+ECDSA-P384 IV-AES256-GCM Parse * 10000 : 3254ms
+ECDSA-P521 IV-AES128-GCM Issue * 10000 : 2707ms
+ECDSA-P521 IV-AES128-GCM Parse * 10000 : 8584ms
+ECDSA-P521 IV-AES256-GCM Issue * 10000 : 2719ms
+ECDSA-P521 IV-AES256-GCM Parse * 10000 : 8564ms
 ```

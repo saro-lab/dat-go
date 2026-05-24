@@ -30,7 +30,7 @@ func (m *Manager) Issue(plain, secure string) (string, error) {
 	return m.IssueWithCertificate(issuer, plain, secure)
 }
 
-func (m *Manager) Parse(dat *Dat) (Payload, error) {
+func (m *Manager) Parse(dat *Dat) (DatPayload, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -39,10 +39,10 @@ func (m *Manager) Parse(dat *Dat) (Payload, error) {
 			return m.ParseWithCertificate(cert, dat)
 		}
 	}
-	return Payload{}, ErrCidNotFound
+	return DatPayload{}, ErrCidNotFound
 }
 
-func (m *Manager) ParseWithoutVerify(dat *Dat) (Payload, error) {
+func (m *Manager) ParseWithoutVerify(dat *Dat) (DatPayload, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -51,7 +51,7 @@ func (m *Manager) ParseWithoutVerify(dat *Dat) (Payload, error) {
 			return m.ParseWithoutVerifyWithCertificate(cert, dat)
 		}
 	}
-	return Payload{}, ErrCidNotFound
+	return DatPayload{}, ErrCidNotFound
 }
 
 func (m *Manager) ExportCids() []uint64 {
@@ -190,28 +190,28 @@ func (m *Manager) IssueWithCertificate(certificate *Certificate, plain, secure s
 	return sb.String(), nil
 }
 
-func (m *Manager) ParseWithCertificate(certificate *Certificate, dat *Dat) (Payload, error) {
+func (m *Manager) ParseWithCertificate(certificate *Certificate, dat *Dat) (DatPayload, error) {
 	if err := certificate.SignatureKey.Verify(dat.BodyBytes(), dat.Signature); err != nil {
-		return Payload{}, ErrInvalidDat
+		return DatPayload{}, ErrInvalidDat
 	}
 	return m.ParseWithoutVerifyWithCertificate(certificate, dat)
 }
 
-func (m *Manager) ParseWithoutVerifyWithCertificate(certificate *Certificate, dat *Dat) (Payload, error) {
+func (m *Manager) ParseWithoutVerifyWithCertificate(certificate *Certificate, dat *Dat) (DatPayload, error) {
 	plain, err := dat.Plain()
 	if err != nil {
-		return Payload{}, err
+		return DatPayload{}, err
 	}
 	secureEncoded, err := dat.Secure()
 	if err != nil {
-		return Payload{}, err
+		return DatPayload{}, err
 	}
 	secure, err := certificate.CryptoKey.Decrypt(secureEncoded)
 	if err != nil {
-		return Payload{}, err
+		return DatPayload{}, err
 	}
 
-	return Payload{
+	return DatPayload{
 		PlainBytes:  plain,
 		SecureBytes: secure,
 	}, nil

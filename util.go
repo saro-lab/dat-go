@@ -38,3 +38,7 @@ func ToHexFromU64Out(n uint64, out *string) {
 	}
 	*out += strconv.FormatUint(n, 16)
 }
+
+func ToUTF8(b []byte) (string, error) {
+	return string(b), nil // Go strings are always UTF-8 or can contain any bytes, but usually we just convert
+}
