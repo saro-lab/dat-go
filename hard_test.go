@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/saro-lab/dat-go"
+	"github.com/saro-lab/dat-go/v4"
 )
 
 func TestHard(t *testing.T) {
