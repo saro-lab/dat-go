@@ -51,10 +51,10 @@ func (c *Certificate) Expired() bool {
 
 func (c *Certificate) Issuable() bool {
 	now := NowUnixTimestamp()
-	return c.HasSigningKey() && now >= c.DatIssueBegin && now <= c.DatIssueEnd
+	return c.Signable() && now >= c.DatIssueBegin && now <= c.DatIssueEnd
 }
 
-func (c *Certificate) HasSigningKey() bool {
+func (c *Certificate) Signable() bool {
 	return c.SignatureKey.Signable()
 }
 
@@ -66,7 +66,7 @@ func (c *Certificate) CryptoAlgorithm() DatCryptoAlgorithm {
 	return c.CryptoKey.Algorithm()
 }
 
-func (c *Certificate) Export(option SignatureKeyExportOption) (string, error) {
+func (c *Certificate) Export(verifyOnly bool) (string, error) {
 	var sb strings.Builder
 	sb.WriteString(ToHexFromU64(c.Cid))
 	sb.WriteString(".")
@@ -81,13 +81,9 @@ func (c *Certificate) Export(option SignatureKeyExportOption) (string, error) {
 	sb.WriteString(string(c.CryptoKey.Algorithm()))
 	sb.WriteString(".")
 
-	verifyOnly := option == Verifying
-	key, err := c.SignatureKey.ExportKeyOption(verifyOnly)
+	key, err := c.SignatureKey.ExportKeyOption(verifyOnly || !c.Signable())
 	if err != nil {
 		return "", err
-	}
-	if !verifyOnly && !c.SignatureKey.Signable() {
-		return "", ErrNotExistsSigningKey
 	}
 
 	sb.WriteString(EncodeBase64URL(key))

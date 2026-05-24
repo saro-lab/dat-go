@@ -25,7 +25,7 @@ func unitCert(t *testing.T, failCertificate *dat.Certificate, cid uint64, signat
 	if err != nil {
 		return err
 	}
-	newCertificateStr, err := newCertificate.Export(dat.Signing)
+	newCertificateStr, err := newCertificate.Export(false)
 	if err != nil {
 		return err
 	}

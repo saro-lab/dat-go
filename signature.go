@@ -29,14 +29,6 @@ const (
 	P521 = EcdsaP521
 )
 
-type SignatureKeyExportOption string
-
-const (
-	Pair      SignatureKeyExportOption = "PAIR"
-	Signing   SignatureKeyExportOption = "SIGNING"
-	Verifying SignatureKeyExportOption = "VERIFYING"
-)
-
 type DatSignature struct {
 	algorithm    DatSignatureAlgorithm
 	privateKey   *ecdsa.PrivateKey
@@ -354,9 +346,4 @@ func (sk *DatSignature) Signable() bool {
 	default:
 		return false
 	}
-}
-
-// Deprecated: Use Signable
-func (sk *DatSignature) HasSigningKey() bool {
-	return sk.Signable()
 }

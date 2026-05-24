@@ -65,7 +65,7 @@ func (m *Manager) ExportCids() []uint64 {
 	return cids
 }
 
-func (m *Manager) Export(option SignatureKeyExportOption) string {
+func (m *Manager) Export(verifyOnly bool) string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -74,7 +74,7 @@ func (m *Manager) Export(option SignatureKeyExportOption) string {
 		if i > 0 {
 			sb.WriteString("\n")
 		}
-		exported, _ := cert.Export(option)
+		exported, _ := cert.Export(verifyOnly)
 		sb.WriteString(exported)
 	}
 	return sb.String()

@@ -61,7 +61,7 @@ func TestManager(t *testing.T) {
 		dats = append(dats, token)
 	}
 
-	exported := manager.Export(dat.Pair)
+	exported := manager.Export(false)
 	manager2 := dat.NewManager()
 	if err := manager2.Import(exported, true); err != nil {
 		t.Fatal(err)
