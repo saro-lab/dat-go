@@ -4,9 +4,9 @@
 
 ### [DAT Run Online](https://dat.saro.me)
 
-### [What is DAT](https://dat.saro.me/--/intro)
+### [What is DAT](https://dat.saro.me/intro)
 
-### [Go Example](https://dat.saro.me/--/libs/go-saro-dat)
+### [Go Example](https://dat.saro.me/libs/go-saro-dat)
 
 ## Support algorithm
 ### Signature
