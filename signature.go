@@ -212,6 +212,10 @@ func (sk *DatSignature) ExportVerifyOnlyKey() ([]byte, error) {
 }
 
 func (sk *DatSignature) ExportKeyOption(verifyOnly bool) ([]byte, error) {
+	if verifyOnly && !sk.SupportVerifyOnly() {
+		return nil, ErrNotSupportedVerifyOnly
+	}
+
 	switch sk.algorithm {
 	case HmacSha256Mfs, HmacSha384Mfs, HmacSha512Mfs:
 		return sk.hmacKey, nil
@@ -343,6 +347,15 @@ func (sk *DatSignature) Signable() bool {
 		return true
 	case EcdsaP256, EcdsaP384, EcdsaP521:
 		return sk.privateKey != nil
+	default:
+		return false
+	}
+}
+
+func (sk *DatSignature) SupportVerifyOnly() bool {
+	switch sk.algorithm {
+	case EcdsaP256, EcdsaP384, EcdsaP521:
+		return true
 	default:
 		return false
 	}

@@ -143,9 +143,9 @@ func (m *Manager) ImportCertificates(newCertificates []*Certificate, clear bool)
 	}
 
 	slices.SortFunc(filtered, func(a, b *Certificate) int {
-		if a.DatIssueEnd < b.DatIssueEnd {
+		if a.DatIssuanceEndSeconds < b.DatIssuanceEndSeconds {
 			return -1
-		} else if a.DatIssueEnd > b.DatIssueEnd {
+		} else if a.DatIssuanceEndSeconds > b.DatIssuanceEndSeconds {
 			return 1
 		}
 		return 0
@@ -166,11 +166,11 @@ func (m *Manager) ImportCertificates(newCertificates []*Certificate, clear bool)
 }
 
 func (m *Manager) IssueWithCertificate(certificate *Certificate, plain, secure string) (string, error) {
-	expire := strconv.FormatUint(NowUnixTimestamp()+certificate.DatTTL, 10)
+	expire := strconv.FormatUint(NowUnixTimestamp()+certificate.DatTtlSeconds, 10)
 
 	var sb strings.Builder
 	sb.WriteString(expire)
-	sb.WriteString(certificate.cidPreCopy)
+	sb.WriteString(certificate.CidPreCopy)
 	sb.WriteString(EncodeBase64URL([]byte(plain)))
 	sb.WriteString(".")
 

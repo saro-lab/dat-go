@@ -9,6 +9,7 @@ func (e Error) Error() string { return string(e) }
 const (
 	ErrInvalidCertificateFormat     Error = "InvalidCertificateFormat"
 	ErrUnknownSignatureAlgorithm    Error = "UnknownSignatureAlgorithm"
+	ErrNotSupportedVerifyOnly       Error = "NotSupportedVerifyOnly"
 	ErrUnknownCryptoAlgorithm       Error = "UnknownCryptoAlgorithm"
 	ErrInvalidSignatureKey          Error = "InvalidSignatureKey"
 	ErrInvalidCryptoKey             Error = "InvalidCryptoKey"

@@ -6,56 +6,60 @@ import (
 )
 
 type Certificate struct {
-	Cid           uint64
-	cidPreCopy    string
-	SignatureKey  *DatSignature
-	CryptoKey     *DatCrypto
-	DatIssueBegin uint64
-	DatIssueEnd   uint64
-	DatTTL        uint64
+	Cid                     uint64
+	CidPreCopy              string
+	SignatureKey            *DatSignature
+	CryptoKey               *DatCrypto
+	DatIssuanceStartSeconds uint64
+	DatIssuanceEndSeconds   uint64
+	DatTtlSeconds           uint64
 }
 
-func NewCertificate(cid uint64, issuedAt, issuanceDuration, ttl uint64, signatureKey *DatSignature, cryptoKey *DatCrypto) (*Certificate, error) {
-	if ttl == 0 {
+func NewCertificate(cid uint64, datIssuanceStartSeconds, datIssuanceDurationSeconds, datTtlSeconds uint64, signatureKey *DatSignature, cryptoKey *DatCrypto) (*Certificate, error) {
+	if datTtlSeconds == 0 {
 		return nil, ErrInvalidDatTtl
 	}
-	if issuanceDuration < ttl*2 && issuanceDuration < (ttl+3600) {
+	if datIssuanceDurationSeconds == 0 {
 		return nil, ErrInvalidIssuanceDuration
 	}
 
 	cidPreCopy := "." + ToHexFromU64(cid) + "."
 
 	return &Certificate{
-		Cid:           cid,
-		cidPreCopy:    cidPreCopy,
-		SignatureKey:  signatureKey,
-		CryptoKey:     cryptoKey,
-		DatIssueBegin: issuedAt,
-		DatIssueEnd:   issuedAt + issuanceDuration,
-		DatTTL:        ttl,
+		Cid:                     cid,
+		CidPreCopy:              cidPreCopy,
+		SignatureKey:            signatureKey,
+		CryptoKey:               cryptoKey,
+		DatIssuanceStartSeconds: datIssuanceStartSeconds,
+		DatIssuanceEndSeconds:   datIssuanceStartSeconds + datIssuanceDurationSeconds,
+		DatTtlSeconds:           datTtlSeconds,
 	}, nil
 }
 
-func GenerateCertificate(cid uint64, issuedAt, issuanceDuration, ttl uint64, signatureAlgorithm DatSignatureAlgorithm, cryptoAlgorithm DatCryptoAlgorithm) (*Certificate, error) {
+func GenerateCertificate(cid uint64, datIssuanceStartSeconds, datIssuanceDurationSeconds, datTtlSeconds uint64, signatureAlgorithm DatSignatureAlgorithm, cryptoAlgorithm DatCryptoAlgorithm) (*Certificate, error) {
 	sk, err := GenerateSignatureKey(signatureAlgorithm)
 	if err != nil {
 		return nil, err
 	}
 	ck := GenerateCryptoKey(cryptoAlgorithm)
-	return NewCertificate(cid, issuedAt, issuanceDuration, ttl, sk, ck)
+	return NewCertificate(cid, datIssuanceStartSeconds, datIssuanceDurationSeconds, datTtlSeconds, sk, ck)
 }
 
 func (c *Certificate) Expired() bool {
-	return (c.DatIssueEnd + c.DatTTL) < NowUnixTimestamp()
+	return (c.DatIssuanceEndSeconds + c.DatTtlSeconds) < NowUnixTimestamp()
 }
 
 func (c *Certificate) Issuable() bool {
 	now := NowUnixTimestamp()
-	return c.Signable() && now >= c.DatIssueBegin && now <= c.DatIssueEnd
+	return c.Signable() && now >= c.DatIssuanceStartSeconds && now <= c.DatIssuanceEndSeconds
 }
 
 func (c *Certificate) Signable() bool {
 	return c.SignatureKey.Signable()
+}
+
+func (c *Certificate) SupportVerifyOnly() bool {
+	return c.SignatureKey.SupportVerifyOnly()
 }
 
 func (c *Certificate) SignatureAlgorithm() DatSignatureAlgorithm {
@@ -70,11 +74,11 @@ func (c *Certificate) Export(verifyOnly bool) (string, error) {
 	var sb strings.Builder
 	sb.WriteString(ToHexFromU64(c.Cid))
 	sb.WriteString(".")
-	sb.WriteString(strconv.FormatUint(c.DatIssueBegin, 10))
+	sb.WriteString(strconv.FormatUint(c.DatIssuanceStartSeconds, 10))
 	sb.WriteString(".")
-	sb.WriteString(strconv.FormatUint(c.DatIssueEnd-c.DatIssueBegin, 10))
+	sb.WriteString(strconv.FormatUint(c.DatIssuanceEndSeconds-c.DatIssuanceStartSeconds, 10))
 	sb.WriteString(".")
-	sb.WriteString(strconv.FormatUint(c.DatTTL, 10))
+	sb.WriteString(strconv.FormatUint(c.DatTtlSeconds, 10))
 	sb.WriteString(".")
 	sb.WriteString(string(c.SignatureKey.Algorithm()))
 	sb.WriteString(".")
@@ -104,17 +108,17 @@ func ParseCertificate(format string) (*Certificate, error) {
 		return nil, ErrInvalidDat
 	}
 
-	issuedAt, err := strconv.ParseUint(parts[1], 10, 64)
+	datIssuanceStartSeconds, err := strconv.ParseUint(parts[1], 10, 64)
 	if err != nil {
 		return nil, ErrInvalidCertificateFormat
 	}
 
-	issuanceDuration, err := strconv.ParseUint(parts[2], 10, 64)
+	datIssuanceDurationSeconds, err := strconv.ParseUint(parts[2], 10, 64)
 	if err != nil {
 		return nil, ErrInvalidCertificateFormat
 	}
 
-	ttl, err := strconv.ParseUint(parts[3], 10, 64)
+	datTtlSeconds, err := strconv.ParseUint(parts[3], 10, 64)
 	if err != nil {
 		return nil, ErrInvalidCertificateFormat
 	}
@@ -144,5 +148,5 @@ func ParseCertificate(format string) (*Certificate, error) {
 		return nil, err
 	}
 
-	return NewCertificate(cid, issuedAt, issuanceDuration, ttl, signatureKey, cryptoKey)
+	return NewCertificate(cid, datIssuanceStartSeconds, datIssuanceDurationSeconds, datTtlSeconds, signatureKey, cryptoKey)
 }
