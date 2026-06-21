@@ -17,7 +17,7 @@ func randStringSig() string {
 	return string(b)
 }
 
-func signingAndVerifying(t *testing.T, alg dat.DatSignatureAlgorithm) error {
+func signingAndVerifying(t *testing.T, alg dat.SignatureAlgorithm) error {
 	tag := fmt.Sprintf("Signature %s", alg)
 	key, err := dat.GenerateSignatureKey(alg)
 	if err != nil {
@@ -61,7 +61,7 @@ func signingAndVerifying(t *testing.T, alg dat.DatSignatureAlgorithm) error {
 }
 
 func TestSignature(t *testing.T) {
-	algs := []dat.DatSignatureAlgorithm{
+	algs := []dat.SignatureAlgorithm{
 		dat.HmacSha256Mfs, dat.HmacSha384Mfs, dat.HmacSha512Mfs,
 		dat.EcdsaP256, dat.EcdsaP384, dat.EcdsaP521,
 	}

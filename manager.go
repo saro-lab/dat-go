@@ -30,7 +30,7 @@ func (m *Manager) Issue(plain, secure string) (string, error) {
 	return m.IssueWithCertificate(issuer, plain, secure)
 }
 
-func (m *Manager) Parse(dat *Dat) (DatPayload, error) {
+func (m *Manager) Parse(dat *Dat) (Payload, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -39,10 +39,10 @@ func (m *Manager) Parse(dat *Dat) (DatPayload, error) {
 			return m.ParseWithCertificate(cert, dat)
 		}
 	}
-	return DatPayload{}, ErrCidNotFound
+	return Payload{}, ErrCidNotFound
 }
 
-func (m *Manager) ParseWithoutVerify(dat *Dat) (DatPayload, error) {
+func (m *Manager) ParseWithoutVerify(dat *Dat) (Payload, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -51,7 +51,7 @@ func (m *Manager) ParseWithoutVerify(dat *Dat) (DatPayload, error) {
 			return m.ParseWithoutVerifyWithCertificate(cert, dat)
 		}
 	}
-	return DatPayload{}, ErrCidNotFound
+	return Payload{}, ErrCidNotFound
 }
 
 func (m *Manager) ExportCids() []uint64 {
@@ -86,7 +86,7 @@ func (m *Manager) ExportCertificates() []*Certificate {
 	return slices.Clone(m.certificates)
 }
 
-func (m *Manager) Import(format string, clear bool) error {
+func (m *Manager) Import(format string, clear bool) (int, error) {
 	lines := strings.Split(format, "\n")
 	var newCerts []*Certificate
 	for _, line := range lines {
@@ -96,21 +96,23 @@ func (m *Manager) Import(format string, clear bool) error {
 		}
 		cert, err := ParseCertificate(line)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		newCerts = append(newCerts, cert)
 	}
 	return m.ImportCertificates(newCerts, clear)
 }
 
-func (m *Manager) ImportCertificates(newCertificates []*Certificate, clear bool) error {
+func (m *Manager) ImportCertificates(newCertificates []*Certificate, clear bool) (int, error) {
 	ids := make(map[uint64]bool)
 	for _, cert := range newCertificates {
 		if ids[cert.Cid] {
-			return ErrDuplicatedCid
+			return 0, ErrDuplicatedCid
 		}
 		ids[cert.Cid] = true
 	}
+
+	var renewCount int = 0
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -132,6 +134,7 @@ func (m *Manager) ImportCertificates(newCertificates []*Certificate, clear bool)
 		}
 		if !found {
 			certificates = append(certificates, newCert)
+			renewCount++
 		}
 	}
 
@@ -162,7 +165,7 @@ func (m *Manager) ImportCertificates(newCertificates []*Certificate, clear bool)
 	m.issuer = issuer
 	m.certificates = filtered
 
-	return nil
+	return renewCount, nil
 }
 
 func (m *Manager) IssueWithCertificate(certificate *Certificate, plain, secure string) (string, error) {
@@ -170,7 +173,7 @@ func (m *Manager) IssueWithCertificate(certificate *Certificate, plain, secure s
 
 	var sb strings.Builder
 	sb.WriteString(expire)
-	sb.WriteString(certificate.CidPreCopy)
+	sb.WriteString(certificate.cidPreCopy)
 	sb.WriteString(EncodeBase64URL([]byte(plain)))
 	sb.WriteString(".")
 
@@ -190,29 +193,29 @@ func (m *Manager) IssueWithCertificate(certificate *Certificate, plain, secure s
 	return sb.String(), nil
 }
 
-func (m *Manager) ParseWithCertificate(certificate *Certificate, dat *Dat) (DatPayload, error) {
+func (m *Manager) ParseWithCertificate(certificate *Certificate, dat *Dat) (Payload, error) {
 	if err := certificate.SignatureKey.Verify(dat.BodyBytes(), dat.Signature); err != nil {
-		return DatPayload{}, ErrInvalidDat
+		return Payload{}, ErrInvalidDat
 	}
 	return m.ParseWithoutVerifyWithCertificate(certificate, dat)
 }
 
-func (m *Manager) ParseWithoutVerifyWithCertificate(certificate *Certificate, dat *Dat) (DatPayload, error) {
+func (m *Manager) ParseWithoutVerifyWithCertificate(certificate *Certificate, dat *Dat) (Payload, error) {
 	plain, err := dat.Plain()
 	if err != nil {
-		return DatPayload{}, err
+		return Payload{}, err
 	}
 	secureEncoded, err := dat.Secure()
 	if err != nil {
-		return DatPayload{}, err
+		return Payload{}, err
 	}
 	secure, err := certificate.CryptoKey.Decrypt(secureEncoded)
 	if err != nil {
-		return DatPayload{}, err
+		return Payload{}, err
 	}
 
-	return DatPayload{
-		PlainBytes:  plain,
-		SecureBytes: secure,
+	return Payload{
+		Plain:  plain,
+		Secure: secure,
 	}, nil
 }

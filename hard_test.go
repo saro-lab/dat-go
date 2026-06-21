@@ -52,7 +52,7 @@ f000000000000000.0.32506362000.32506358400.ECDSA-P521.IV-AES256-GCM.BACwvrucwjh5
 34285962080.ffffffffffffffff.VW5pY29kZSDsnKDri4jsvZTrk5wg44Om44OL44Kz44O844OJIOS4h-WbveeggSDZitmI2YbZitmD2YjYryDgpK_gpYLgpKjgpL_gpJXgpYvgpKEg0K7QvdC40LrQvtC0IPCfpoTwn5K7.CB4sUN2OOwUCgCqJSc6o_rlnIuO7U_Oq7NobA4vroqlAUgf8DYjsWtLRFrQPVwMbENiFuiQJah2NkYZi1N_1VYj_AfHTjufIGs6oMkeQHLUSk2Ps5tJlwsbRYZepy5tkpgTFfAJCaCYiXxYhviqM17s5clfJ3EFbhK3kHmw_Gv3Xh2sJsVt_E6o-y_lo1oZ_OO1eC9Sga9k8.AartOe5JeQK8hqcDGYBfbIdY-kc8IWF4fWFrX28crwNtbxy2OKulw-jYsY5BqSW05Ekpt55eEvfMCwMZK-5nRMmwAK3-t_YtxmwzXXORipJC_hQH6gFKKj6PDRc3V-fWkQBS44op5XCsavwUzha_JDr4un5n9zFO6SQNz466MZhgcmqf
 34285962080.f000000000000000.VW5pY29kZSDsnKDri4jsvZTrk5wg44Om44OL44Kz44O844OJIOS4h-WbveeggSDZitmI2YbZitmD2YjYryDgpK_gpYLgpKjgpL_gpJXgpYvgpKEg0K7QvdC40LrQvtC0IPCfpoTwn5K7.TmxzY2YJ3OjIqoTjUBMaJt2jxpQ2drRgjSjJihKSJ-SkOQL6AWaW5j5_XGLg0CxJ8ac4FQOb4rt9Y7E-so1TI_dVQEVk8IeBovob6yQDx_dqpHrwfN7HfX-_D2GvgJb-R1syal2jKV4ESQsuhWrqaRl9_TcGkzDPKsTg2GDStf45FJ8fisPAECMtAUo3fVqPnGJcl0k7JXAX.AFxCzP8FerpzUx6TWKL-Sbj9C8wHWR5b1vHd_MFnd-2141T-vdgHlI94e2WkaxZv9T9vElbQMA7_JeuWOdKObygoAJCFJ53O-qX_xcaD5tbUTtDPEeWtlV0c9wulzN6ZvjEd2x_7Immj0tHk2ni2r7oKTH9pBPKfWC2fWrvCZMYtjX5M`
 
-	err := manager.Import(strings.TrimSpace(certsStr), true)
+	_, err := manager.Import(strings.TrimSpace(certsStr), true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,19 +68,34 @@ f000000000000000.0.32506362000.32506358400.ECDSA-P521.IV-AES256-GCM.BACwvrucwjh5
 		if err != nil {
 			t.Fatalf("manager.Parse failed for %s: %v", token, err)
 		}
-		sp, err := payload.ToStringPayload()
-		if err != nil {
-			t.Fatal(err)
-		}
 
-		if sp.Plain != plain {
-			t.Errorf("expected plain %s, got %s", plain, sp.Plain)
+		if payload.PlainText() != plain {
+			t.Errorf("expected plain %s, got %s", plain, payload.PlainText())
 		}
-		if sp.Secure != secure {
-			t.Errorf("expected secure %s, got %s", secure, sp.Secure)
+		if payload.SecureText() != secure {
+			t.Errorf("expected secure %s, got %s", secure, payload.SecureText())
 		}
 
 		fmt.Printf("PASS %s\n", token)
-		fmt.Printf("PASS %s\n", sp.String())
 	}
+
+	newDat, err := manager.Issue(plain, secure)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newDatObj, err := dat.ParseDat(newDat)
+	if err != nil {
+		t.Fatalf("ParseDat failed for %s: %v", newDat, err)
+	}
+	newPayload, err := manager.Parse(newDatObj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if newPayload.PlainText() != plain {
+		t.Errorf("expected plain %s, got %s", plain, newPayload.PlainText())
+	}
+	if newPayload.SecureText() != secure {
+		t.Errorf("expected secure %s, got %s", secure, newPayload.SecureText())
+	}
+	fmt.Printf("PASS DAT %s\n", newDat)
 }

@@ -17,7 +17,7 @@ func randStringCrypto() string {
 	return string(b)
 }
 
-func encryptAndDecrypt(t *testing.T, alg dat.DatCryptoAlgorithm, randStr string) error {
+func encryptAndDecrypt(t *testing.T, alg dat.CryptoAlgorithm, randStr string) error {
 	tag := fmt.Sprintf("Crypto %s", alg)
 	fmt.Printf("%s ready\n", tag)
 
@@ -70,7 +70,7 @@ func encryptAndDecrypt(t *testing.T, alg dat.DatCryptoAlgorithm, randStr string)
 }
 
 func TestCrypto(t *testing.T) {
-	algs := []dat.DatCryptoAlgorithm{dat.IvAes128Gcm, dat.IvAes256Gcm}
+	algs := []dat.CryptoAlgorithm{dat.IvAes128Gcm, dat.IvAes256Gcm}
 	for _, alg := range algs {
 		// random
 		for i := 0; i < 20; i++ {

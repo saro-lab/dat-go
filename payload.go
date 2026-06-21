@@ -4,27 +4,18 @@ import (
 	"fmt"
 )
 
-type DatPayload struct {
-	PlainBytes  []byte
-	SecureBytes []byte
+type Payload struct {
+	Plain  []byte
+	Secure []byte
 }
 
-type StringPayload struct {
-	Plain  string
-	Secure string
+func (p Payload) PlainText() string {
+	return string(p.Plain)
+}
+func (p Payload) SecureText() string {
+	return string(p.Secure)
 }
 
-func (p DatPayload) ToStringPayload() (StringPayload, error) {
-	return StringPayload{
-		Plain:  string(p.PlainBytes),
-		Secure: string(p.SecureBytes),
-	}, nil
-}
-
-func (p DatPayload) String() string {
-	return fmt.Sprintf("%s %s", EncodeBase64URL(p.PlainBytes), EncodeBase64URL(p.SecureBytes))
-}
-
-func (sp StringPayload) String() string {
-	return fmt.Sprintf("%s %s", sp.Plain, sp.Secure)
+func (p Payload) String() string {
+	return fmt.Sprintf("%s %s", EncodeBase64URL(p.Plain), EncodeBase64URL(p.Secure))
 }

@@ -7,15 +7,15 @@ import (
 
 type Certificate struct {
 	Cid                     uint64
-	CidPreCopy              string
-	SignatureKey            *DatSignature
-	CryptoKey               *DatCrypto
+	cidPreCopy              string
+	SignatureKey            *Signature
+	CryptoKey               *Crypto
 	DatIssuanceStartSeconds uint64
 	DatIssuanceEndSeconds   uint64
 	DatTtlSeconds           uint64
 }
 
-func NewCertificate(cid uint64, datIssuanceStartSeconds, datIssuanceDurationSeconds, datTtlSeconds uint64, signatureKey *DatSignature, cryptoKey *DatCrypto) (*Certificate, error) {
+func NewCertificate(cid uint64, datIssuanceStartSeconds, datIssuanceDurationSeconds, datTtlSeconds uint64, signatureKey *Signature, cryptoKey *Crypto) (*Certificate, error) {
 	if datTtlSeconds == 0 {
 		return nil, ErrInvalidDatTtl
 	}
@@ -27,7 +27,7 @@ func NewCertificate(cid uint64, datIssuanceStartSeconds, datIssuanceDurationSeco
 
 	return &Certificate{
 		Cid:                     cid,
-		CidPreCopy:              cidPreCopy,
+		cidPreCopy:              cidPreCopy,
 		SignatureKey:            signatureKey,
 		CryptoKey:               cryptoKey,
 		DatIssuanceStartSeconds: datIssuanceStartSeconds,
@@ -36,7 +36,7 @@ func NewCertificate(cid uint64, datIssuanceStartSeconds, datIssuanceDurationSeco
 	}, nil
 }
 
-func GenerateCertificate(cid uint64, datIssuanceStartSeconds, datIssuanceDurationSeconds, datTtlSeconds uint64, signatureAlgorithm DatSignatureAlgorithm, cryptoAlgorithm DatCryptoAlgorithm) (*Certificate, error) {
+func GenerateCertificate(cid uint64, datIssuanceStartSeconds, datIssuanceDurationSeconds, datTtlSeconds uint64, signatureAlgorithm SignatureAlgorithm, cryptoAlgorithm CryptoAlgorithm) (*Certificate, error) {
 	sk, err := GenerateSignatureKey(signatureAlgorithm)
 	if err != nil {
 		return nil, err
@@ -62,11 +62,11 @@ func (c *Certificate) SupportVerifyOnly() bool {
 	return c.SignatureKey.SupportVerifyOnly()
 }
 
-func (c *Certificate) SignatureAlgorithm() DatSignatureAlgorithm {
+func (c *Certificate) SignatureAlgorithm() SignatureAlgorithm {
 	return c.SignatureKey.Algorithm()
 }
 
-func (c *Certificate) CryptoAlgorithm() DatCryptoAlgorithm {
+func (c *Certificate) CryptoAlgorithm() CryptoAlgorithm {
 	return c.CryptoKey.Algorithm()
 }
 
@@ -123,7 +123,7 @@ func ParseCertificate(format string) (*Certificate, error) {
 		return nil, ErrInvalidCertificateFormat
 	}
 
-	sigAlgo := DatSignatureAlgorithm(parts[4])
+	sigAlgo := SignatureAlgorithm(parts[4])
 	sigKeyBytes, err := DecodeBase64URL(parts[6])
 	if err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ func ParseCertificate(format string) (*Certificate, error) {
 		}
 	}
 
-	cryptoAlgo := DatCryptoAlgorithm(parts[5])
+	cryptoAlgo := CryptoAlgorithm(parts[5])
 	cryptoKeyBytes, err := DecodeBase64URL(parts[7])
 	if err != nil {
 		return nil, err

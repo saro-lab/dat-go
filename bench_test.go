@@ -56,7 +56,7 @@ func loopsBench(multiThread bool, loopSize int, certificates []*dat.Certificate,
 		fmt.Printf("%s Issue * %d : %dms\n", pre, loopSize, duration.Milliseconds())
 
 		d, _ := dat.ParseDat(lastToken)
-		var lastPayload dat.DatPayload
+		var lastPayload dat.Payload
 
 		start = time.Now()
 		if multiThread {
@@ -81,8 +81,7 @@ func loopsBench(multiThread bool, loopSize int, certificates []*dat.Certificate,
 		duration = time.Since(start)
 		fmt.Printf("%s Parse * %d : %dms\n", pre, loopSize, duration.Milliseconds())
 
-		sp, _ := lastPayload.ToStringPayload()
-		if sp.Plain != plain || sp.Secure != secure {
+		if lastPayload.PlainText() != plain || lastPayload.SecureText() != secure {
 			panic("payload mismatch")
 		}
 	}
@@ -98,11 +97,11 @@ func TestBenchmark(t *testing.T) {
 	fmt.Printf("plain: %s\n", plain)
 	fmt.Printf("secure: %s\n", secure)
 
-	signAlgs := []dat.DatSignatureAlgorithm{
+	signAlgs := []dat.SignatureAlgorithm{
 		dat.HmacSha256Mfs, dat.HmacSha384Mfs, dat.HmacSha512Mfs,
 		dat.EcdsaP256, dat.EcdsaP384, dat.EcdsaP521,
 	}
-	cryptoAlgs := []dat.DatCryptoAlgorithm{dat.IvAes128Gcm, dat.IvAes256Gcm}
+	cryptoAlgs := []dat.CryptoAlgorithm{dat.IvAes128Gcm, dat.IvAes256Gcm}
 
 	var certificates []*dat.Certificate
 	now := dat.NowUnixTimestamp()

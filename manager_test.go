@@ -1,7 +1,6 @@
 package dat_test
 
 import (
-	"fmt"
 	"math/rand/v2"
 	"testing"
 
@@ -18,11 +17,11 @@ func randString() string {
 }
 
 func genCertificate(manager *dat.Manager) error {
-	signAlgs := []dat.DatSignatureAlgorithm{
+	signAlgs := []dat.SignatureAlgorithm{
 		dat.HmacSha256Mfs, dat.HmacSha384Mfs, dat.HmacSha512Mfs,
 		dat.EcdsaP256, dat.EcdsaP384, dat.EcdsaP521,
 	}
-	cryptoAlgs := []dat.DatCryptoAlgorithm{dat.IvAes128Gcm, dat.IvAes256Gcm}
+	cryptoAlgs := []dat.CryptoAlgorithm{dat.IvAes128Gcm, dat.IvAes256Gcm}
 	var certificates []*dat.Certificate
 	now := dat.NowUnixTimestamp()
 	var i uint64 = 0
@@ -39,7 +38,8 @@ func genCertificate(manager *dat.Manager) error {
 			}
 		}
 	}
-	return manager.ImportCertificates(certificates, false)
+	_, err := manager.ImportCertificates(certificates, true)
+	return err
 }
 
 func TestManager(t *testing.T) {
@@ -63,11 +63,10 @@ func TestManager(t *testing.T) {
 
 	exported := manager.Export(false)
 	manager2 := dat.NewManager()
-	if err := manager2.Import(exported, true); err != nil {
+	if _, err := manager2.Import(exported, true); err != nil {
 		t.Fatal(err)
 	}
 
-	tag := "Manager"
 	for _, token := range dats {
 		d, err := dat.ParseDat(token)
 		if err != nil {
@@ -77,14 +76,12 @@ func TestManager(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sp, _ := payload.ToStringPayload()
-		fmt.Printf("%s %s\n", tag, sp.String())
 
-		if sp.Plain != plain {
-			t.Errorf("expected plain %s, got %s", plain, sp.Plain)
+		if payload.PlainText() != plain {
+			t.Errorf("expected plain %s, got %s", plain, payload.PlainText())
 		}
-		if sp.Secure != secure {
-			t.Errorf("expected secure %s, got %s", secure, sp.Secure)
+		if payload.SecureText() != secure {
+			t.Errorf("expected secure %s, got %s", secure, payload.SecureText())
 		}
 	}
 }

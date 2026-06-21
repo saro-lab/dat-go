@@ -17,7 +17,7 @@ func randStringCert() string {
 	return string(b)
 }
 
-func unitCert(t *testing.T, failCertificate *dat.Certificate, cid uint64, signatureAlgorithm dat.DatSignatureAlgorithm, cryptoAlgorithm dat.DatCryptoAlgorithm, plain string, secure string) error {
+func unitCert(t *testing.T, failCertificate *dat.Certificate, cid uint64, signatureAlgorithm dat.SignatureAlgorithm, cryptoAlgorithm dat.CryptoAlgorithm, plain string, secure string) error {
 	tag := fmt.Sprintf("dat.%s.%s.%x", signatureAlgorithm, cryptoAlgorithm, cid)
 
 	now := dat.NowUnixTimestamp()
@@ -51,14 +51,12 @@ func unitCert(t *testing.T, failCertificate *dat.Certificate, cid uint64, signat
 	if err != nil {
 		return err
 	}
-	sp, _ := payload.ToStringPayload()
-	fmt.Printf("%s:%s\n", tag, sp.String())
 
-	if plain != sp.Plain {
-		t.Errorf("expected plain %s, got %s", plain, sp.Plain)
+	if plain != payload.PlainText() {
+		t.Errorf("expected plain %s, got %s", plain, payload.PlainText())
 	}
-	if secure != sp.Secure {
-		t.Errorf("expected secure %s, got %s", secure, sp.Secure)
+	if secure != payload.SecureText() {
+		t.Errorf("expected secure %s, got %s", secure, payload.SecureText())
 	}
 
 	if _, err := manager.ParseWithCertificate(failCertificate, d); err == nil {
@@ -69,11 +67,11 @@ func unitCert(t *testing.T, failCertificate *dat.Certificate, cid uint64, signat
 }
 
 func TestCertificate(t *testing.T) {
-	signAlgs := []dat.DatSignatureAlgorithm{
+	signAlgs := []dat.SignatureAlgorithm{
 		dat.HmacSha256Mfs, dat.HmacSha384Mfs, dat.HmacSha512Mfs,
 		dat.EcdsaP256, dat.EcdsaP384, dat.EcdsaP521,
 	}
-	cryptoAlgs := []dat.DatCryptoAlgorithm{dat.IvAes128Gcm, dat.IvAes256Gcm}
+	cryptoAlgs := []dat.CryptoAlgorithm{dat.IvAes128Gcm, dat.IvAes256Gcm}
 
 	now := dat.NowUnixTimestamp()
 	failCertificate, _ := dat.GenerateCertificate(192874, now-10, 610, 60, dat.EcdsaP256, dat.IvAes256Gcm)

@@ -7,11 +7,11 @@ import (
 	"io"
 )
 
-type DatCryptoAlgorithm string
+type CryptoAlgorithm string
 
 const (
-	IvAes128Gcm DatCryptoAlgorithm = "IV-AES128-GCM"
-	IvAes256Gcm DatCryptoAlgorithm = "IV-AES256-GCM"
+	IvAes128Gcm CryptoAlgorithm = "IV-AES128-GCM"
+	IvAes256Gcm CryptoAlgorithm = "IV-AES256-GCM"
 )
 
 // Deprecated: Use IvAes128Gcm, IvAes256Gcm instead
@@ -20,14 +20,14 @@ const (
 	AES256GCMN = IvAes256Gcm
 )
 
-type DatCrypto struct {
-	algorithm DatCryptoAlgorithm
+type Crypto struct {
+	algorithm CryptoAlgorithm
 	key       []byte
 	block     cipher.Block
 	gcm       cipher.AEAD
 }
 
-func NewCryptoKey(algorithm DatCryptoAlgorithm, data []byte) (*DatCrypto, error) {
+func NewCryptoKey(algorithm CryptoAlgorithm, data []byte) (*Crypto, error) {
 	block, err := aes.NewCipher(data)
 	if err != nil {
 		return nil, ErrInvalidCryptoKey
@@ -36,7 +36,7 @@ func NewCryptoKey(algorithm DatCryptoAlgorithm, data []byte) (*DatCrypto, error)
 	if err != nil {
 		return nil, ErrInvalidCryptoKey
 	}
-	return &DatCrypto{
+	return &Crypto{
 		algorithm: algorithm,
 		key:       data,
 		block:     block,
@@ -44,7 +44,7 @@ func NewCryptoKey(algorithm DatCryptoAlgorithm, data []byte) (*DatCrypto, error)
 	}, nil
 }
 
-func GenerateCryptoKey(algorithm DatCryptoAlgorithm) *DatCrypto {
+func GenerateCryptoKey(algorithm CryptoAlgorithm) *Crypto {
 	var size int
 	switch algorithm {
 	case IvAes128Gcm:
@@ -60,15 +60,15 @@ func GenerateCryptoKey(algorithm DatCryptoAlgorithm) *DatCrypto {
 	return ck
 }
 
-func (ck *DatCrypto) Algorithm() DatCryptoAlgorithm {
+func (ck *Crypto) Algorithm() CryptoAlgorithm {
 	return ck.algorithm
 }
 
-func (ck *DatCrypto) ToBytes() []byte {
+func (ck *Crypto) ToBytes() []byte {
 	return ck.key
 }
 
-func (ck *DatCrypto) KeyBase64Len() int {
+func (ck *Crypto) KeyBase64Len() int {
 	switch ck.algorithm {
 	case IvAes128Gcm:
 		return 22
@@ -79,7 +79,7 @@ func (ck *DatCrypto) KeyBase64Len() int {
 	}
 }
 
-func (ck *DatCrypto) Encrypt(body []byte) ([]byte, error) {
+func (ck *Crypto) Encrypt(body []byte) ([]byte, error) {
 	if len(body) == 0 {
 		return []byte{}, nil
 	}
@@ -93,7 +93,7 @@ func (ck *DatCrypto) Encrypt(body []byte) ([]byte, error) {
 	return encData, nil
 }
 
-func (ck *DatCrypto) Decrypt(data []byte) ([]byte, error) {
+func (ck *Crypto) Decrypt(data []byte) ([]byte, error) {
 	if len(data) == 0 {
 		return []byte{}, nil
 	}

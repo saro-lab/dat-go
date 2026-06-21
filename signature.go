@@ -11,15 +11,15 @@ import (
 	"math/big"
 )
 
-type DatSignatureAlgorithm string
+type SignatureAlgorithm string
 
 const (
-	HmacSha256Mfs DatSignatureAlgorithm = "HMAC-SHA256-MFS"
-	HmacSha384Mfs DatSignatureAlgorithm = "HMAC-SHA384-MFS"
-	HmacSha512Mfs DatSignatureAlgorithm = "HMAC-SHA512-MFS"
-	EcdsaP256     DatSignatureAlgorithm = "ECDSA-P256"
-	EcdsaP384     DatSignatureAlgorithm = "ECDSA-P384"
-	EcdsaP521     DatSignatureAlgorithm = "ECDSA-P521"
+	HmacSha256Mfs SignatureAlgorithm = "HMAC-SHA256-MFS"
+	HmacSha384Mfs SignatureAlgorithm = "HMAC-SHA384-MFS"
+	HmacSha512Mfs SignatureAlgorithm = "HMAC-SHA512-MFS"
+	EcdsaP256     SignatureAlgorithm = "ECDSA-P256"
+	EcdsaP384     SignatureAlgorithm = "ECDSA-P384"
+	EcdsaP521     SignatureAlgorithm = "ECDSA-P521"
 )
 
 // Deprecated: Use EcdsaP256, EcdsaP384, EcdsaP521 instead
@@ -29,8 +29,8 @@ const (
 	P521 = EcdsaP521
 )
 
-type DatSignature struct {
-	algorithm    DatSignatureAlgorithm
+type Signature struct {
+	algorithm    SignatureAlgorithm
 	privateKey   *ecdsa.PrivateKey
 	publicKey    *ecdsa.PublicKey
 	hmacKey      []byte
@@ -38,7 +38,7 @@ type DatSignature struct {
 	publicBytes  []byte
 }
 
-func NewSignatureKey(algorithm DatSignatureAlgorithm, privateBytes, publicBytes []byte) (*DatSignature, error) {
+func NewSignatureKey(algorithm SignatureAlgorithm, privateBytes, publicBytes []byte) (*Signature, error) {
 	switch algorithm {
 	case HmacSha256Mfs, HmacSha384Mfs, HmacSha512Mfs:
 		size := 0
@@ -53,7 +53,7 @@ func NewSignatureKey(algorithm DatSignatureAlgorithm, privateBytes, publicBytes 
 		if len(privateBytes) != size {
 			return nil, ErrInvalidSignatureKey
 		}
-		return &DatSignature{
+		return &Signature{
 			algorithm:    algorithm,
 			hmacKey:      privateBytes,
 			privateBytes: privateBytes,
@@ -74,7 +74,7 @@ func NewSignatureKey(algorithm DatSignatureAlgorithm, privateBytes, publicBytes 
 			privateLen, publicLen = 66, 133
 		}
 
-		sk := &DatSignature{
+		sk := &Signature{
 			algorithm: algorithm,
 		}
 
@@ -126,7 +126,7 @@ func NewSignatureKey(algorithm DatSignatureAlgorithm, privateBytes, publicBytes 
 	}
 }
 
-func GenerateSignatureKey(algorithm DatSignatureAlgorithm) (*DatSignature, error) {
+func GenerateSignatureKey(algorithm SignatureAlgorithm) (*Signature, error) {
 	switch algorithm {
 	case HmacSha256Mfs, HmacSha384Mfs, HmacSha512Mfs:
 		size := 0
@@ -142,7 +142,7 @@ func GenerateSignatureKey(algorithm DatSignatureAlgorithm) (*DatSignature, error
 		if _, err := rand.Read(key); err != nil {
 			return nil, ErrGenerateSigningKeyError
 		}
-		return &DatSignature{
+		return &Signature{
 			algorithm:    algorithm,
 			hmacKey:      key,
 			privateBytes: key,
@@ -168,7 +168,7 @@ func GenerateSignatureKey(algorithm DatSignatureAlgorithm) (*DatSignature, error
 		privateBytes := priv.D.FillBytes(make([]byte, byteSize))
 		publicBytes := elliptic.Marshal(curve, priv.PublicKey.X, priv.PublicKey.Y)
 
-		return &DatSignature{
+		return &Signature{
 			algorithm:    algorithm,
 			privateKey:   priv,
 			publicKey:    &priv.PublicKey,
@@ -180,11 +180,11 @@ func GenerateSignatureKey(algorithm DatSignatureAlgorithm) (*DatSignature, error
 	}
 }
 
-func (sk *DatSignature) Algorithm() DatSignatureAlgorithm {
+func (sk *Signature) Algorithm() SignatureAlgorithm {
 	return sk.algorithm
 }
 
-func (sk *DatSignature) KeyBase64Len() int {
+func (sk *Signature) KeyBase64Len() int {
 	switch sk.algorithm {
 	case HmacSha256Mfs:
 		return 43
@@ -203,15 +203,15 @@ func (sk *DatSignature) KeyBase64Len() int {
 	}
 }
 
-func (sk *DatSignature) ExportKey() ([]byte, error) {
+func (sk *Signature) ExportKey() ([]byte, error) {
 	return sk.ExportKeyOption(false)
 }
 
-func (sk *DatSignature) ExportVerifyOnlyKey() ([]byte, error) {
+func (sk *Signature) ExportVerifyOnlyKey() ([]byte, error) {
 	return sk.ExportKeyOption(true)
 }
 
-func (sk *DatSignature) ExportKeyOption(verifyOnly bool) ([]byte, error) {
+func (sk *Signature) ExportKeyOption(verifyOnly bool) ([]byte, error) {
 	if verifyOnly && !sk.SupportVerifyOnly() {
 		return nil, ErrNotSupportedVerifyOnly
 	}
@@ -233,11 +233,11 @@ func (sk *DatSignature) ExportKeyOption(verifyOnly bool) ([]byte, error) {
 }
 
 // Deprecated: Use ExportKey or ExportVerifyOnlyKey
-func (sk *DatSignature) ToBytes() ([]byte, []byte) {
+func (sk *Signature) ToBytes() ([]byte, []byte) {
 	return sk.privateBytes, sk.publicBytes
 }
 
-func (sk *DatSignature) Sign(data []byte) ([]byte, error) {
+func (sk *Signature) Sign(data []byte) ([]byte, error) {
 	switch sk.algorithm {
 	case HmacSha256Mfs, HmacSha384Mfs, HmacSha512Mfs:
 		var h func() hash.Hash
@@ -285,7 +285,7 @@ func (sk *DatSignature) Sign(data []byte) ([]byte, error) {
 	}
 }
 
-func (sk *DatSignature) Verify(body, sign []byte) error {
+func (sk *Signature) Verify(body, sign []byte) error {
 	if len(sign) == 0 {
 		return ErrInvalidDat
 	}
@@ -341,7 +341,7 @@ func (sk *DatSignature) Verify(body, sign []byte) error {
 	}
 }
 
-func (sk *DatSignature) Signable() bool {
+func (sk *Signature) Signable() bool {
 	switch sk.algorithm {
 	case HmacSha256Mfs, HmacSha384Mfs, HmacSha512Mfs:
 		return true
@@ -352,7 +352,7 @@ func (sk *DatSignature) Signable() bool {
 	}
 }
 
-func (sk *DatSignature) SupportVerifyOnly() bool {
+func (sk *Signature) SupportVerifyOnly() bool {
 	switch sk.algorithm {
 	case EcdsaP256, EcdsaP384, EcdsaP521:
 		return true
