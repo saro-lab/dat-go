@@ -54,11 +54,11 @@ func TestManager(t *testing.T) {
 	certs := manager.ExportCertificates()
 	var dats []string
 	for _, cert := range certs {
-		token, err := manager.IssueWithCertificate(cert, plain, secure)
+		datStr, err := manager.IssueWithCertificate(cert, plain, secure)
 		if err != nil {
 			t.Fatal(err)
 		}
-		dats = append(dats, token)
+		dats = append(dats, datStr)
 	}
 
 	exported := manager.Export(false)
@@ -67,12 +67,8 @@ func TestManager(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, token := range dats {
-		d, err := dat.ParseDat(token)
-		if err != nil {
-			t.Fatal(err)
-		}
-		payload, err := manager2.Parse(d)
+	for _, datStr := range dats {
+		payload, err := manager2.Parse(datStr)
 		if err != nil {
 			t.Fatal(err)
 		}

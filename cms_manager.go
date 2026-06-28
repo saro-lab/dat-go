@@ -104,10 +104,7 @@ func (b *CmsManagerBuilder) Build() (*CmsManager, error) {
 	}
 
 	// first sync
-	if err := m.Sync(); err != nil {
-		cancel()
-		return nil, err
-	}
+	_ = m.Sync()
 
 	if b.interval > 0 {
 		go m.startBackgroundSync(ctx, b.interval)
@@ -215,12 +212,20 @@ func (m *CmsManager) Issue(plain string, secure string) (string, error) {
 	return m.manager.Issue(plain, secure)
 }
 
-func (m *CmsManager) Parse(dat *Dat) (Payload, error) {
-	return m.manager.Parse(dat)
+func (m *CmsManager) Parse(datStr string) (Payload, error) {
+	return m.manager.Parse(datStr)
 }
 
-func (m *CmsManager) ParseWithoutVerify(dat *Dat) (Payload, error) {
-	return m.manager.ParseWithoutVerify(dat)
+func (m *CmsManager) ParseDat(dat *Dat) (Payload, error) {
+	return m.manager.ParseDat(dat)
+}
+
+func (m *CmsManager) ParseWithoutVerify(datStr string) (Payload, error) {
+	return m.manager.ParseWithoutVerify(datStr)
+}
+
+func (m *CmsManager) ParseDatWithoutVerify(dat *Dat) (Payload, error) {
+	return m.manager.ParseDatWithoutVerify(dat)
 }
 
 func (m *CmsManager) GetManager() *Manager {

@@ -59,14 +59,10 @@ f000000000000000.0.32506362000.32506358400.ECDSA-P521.IV-AES256-GCM.BACwvrucwjh5
 
 	datList := strings.Split(strings.TrimSpace(datListStr), "\n")
 
-	for _, token := range datList {
-		d, err := dat.ParseDat(token)
+	for _, datStr := range datList {
+		payload, err := manager.Parse(datStr)
 		if err != nil {
-			t.Fatalf("ParseDat failed for %s: %v", token, err)
-		}
-		payload, err := manager.Parse(d)
-		if err != nil {
-			t.Fatalf("manager.Parse failed for %s: %v", token, err)
+			t.Fatalf("manager.Parse failed for %s: %v", datStr, err)
 		}
 
 		if payload.PlainText() != plain {
@@ -76,18 +72,14 @@ f000000000000000.0.32506362000.32506358400.ECDSA-P521.IV-AES256-GCM.BACwvrucwjh5
 			t.Errorf("expected secure %s, got %s", secure, payload.SecureText())
 		}
 
-		fmt.Printf("PASS %s\n", token)
+		fmt.Printf("PASS %s\n", datStr)
 	}
 
 	newDat, err := manager.Issue(plain, secure)
 	if err != nil {
 		t.Fatal(err)
 	}
-	newDatObj, err := dat.ParseDat(newDat)
-	if err != nil {
-		t.Fatalf("ParseDat failed for %s: %v", newDat, err)
-	}
-	newPayload, err := manager.Parse(newDatObj)
+	newPayload, err := manager.Parse(newDat)
 	if err != nil {
 		t.Fatal(err)
 	}

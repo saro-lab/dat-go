@@ -30,7 +30,15 @@ func (m *Manager) Issue(plain, secure string) (string, error) {
 	return m.IssueWithCertificate(issuer, plain, secure)
 }
 
-func (m *Manager) Parse(dat *Dat) (Payload, error) {
+func (m *Manager) Parse(datStr string) (Payload, error) {
+	d, err := ParseDat(datStr)
+	if err != nil {
+		return Payload{}, err
+	}
+	return m.ParseDat(d)
+}
+
+func (m *Manager) ParseDat(dat *Dat) (Payload, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -42,7 +50,15 @@ func (m *Manager) Parse(dat *Dat) (Payload, error) {
 	return Payload{}, ErrCidNotFound
 }
 
-func (m *Manager) ParseWithoutVerify(dat *Dat) (Payload, error) {
+func (m *Manager) ParseWithoutVerify(datStr string) (Payload, error) {
+	d, err := ParseDat(datStr)
+	if err != nil {
+		return Payload{}, err
+	}
+	return m.ParseDatWithoutVerify(d)
+}
+
+func (m *Manager) ParseDatWithoutVerify(dat *Dat) (Payload, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
